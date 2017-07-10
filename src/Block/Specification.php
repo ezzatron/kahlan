@@ -4,13 +4,16 @@ namespace Kahlan\Block;
 use Closure;
 use Exception;
 use Kahlan\Expectation;
-use Kahlan\ExternalExpectation;
+use Kahlan\Filter\Behavior\Filterable;
+use Kahlan\Filter\Filter;
 use Kahlan\Scope\Specification as Scope;
 use Kahlan\Suite;
 use Throwable;
 
 class Specification extends \Kahlan\Block
 {
+    use Filterable;
+
     /**
      * List of expectations.
      * @var Expectation[]
@@ -87,6 +90,20 @@ class Specification extends \Kahlan\Block
     }
 
     /**
+     * Executes a closure.
+     *
+     * @param Closure $closure The closure to execute.
+     *
+     * @return mixed           The result of execution.
+     */
+    protected function _executeClosure(Closure $closure)
+    {
+        return Filter::on($this, 'executeClosure', [$closure], function () use ($closure) {
+            return $closure();
+        });
+    }
+
+    /**
      * Spec execution helper.
      */
     protected function _execute()
@@ -95,7 +112,7 @@ class Specification extends \Kahlan\Block
         $spec = function () {
             $this->_expectations = [];
             $closure = $this->_closure;
-            $result = $closure($this);
+            $result = $this->_executeClosure($closure);
             foreach ($this->_expectations as $expectation) {
                 $this->_passed = $expectation->process() && $this->_passed;
             }
